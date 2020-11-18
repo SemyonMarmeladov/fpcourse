@@ -38,9 +38,9 @@ exec ::
   State s a
   -> s
   -> s
-exec =
-  error "todo: Course.State#exec"
-
+exec (State k) =
+  snd . k
+-- I want to runState with state and x, then call snd.
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
 --
 -- prop> \(Fun _ f) s -> eval (State f) s == fst (runState (State f) s)
