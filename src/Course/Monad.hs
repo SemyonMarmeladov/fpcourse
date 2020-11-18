@@ -18,12 +18,12 @@ import qualified Prelude as P((=<<))
 --
 -- * The law of associativity
 --   `∀f g x. g =<< (f =<< x) ≅ ((g =<<) . f) =<< x`
-class Applicative k => Monad k where
+class Applicative f => Monad f where
   -- Pronounced, bind.
   (=<<) ::
-    (a -> k b)
-    -> k a
-    -> k b
+    (a -> f b)
+    -> f a
+    -> f b
 
 infixr 1 =<<
 
@@ -36,8 +36,8 @@ instance Monad ExactlyOne where
     (a -> ExactlyOne b)
     -> ExactlyOne a
     -> ExactlyOne b
-  (=<<) =
-    error "todo: Course.Monad (=<<)#instance ExactlyOne"
+  f =<< ExactlyOne a =
+    f a
 
 -- | Binds a function on a List.
 --
@@ -49,7 +49,7 @@ instance Monad List where
     -> List a
     -> List b
   (=<<) =
-    error "todo: Course.Monad (=<<)#instance List"
+    flatMap
 
 -- | Binds a function on an Optional.
 --
@@ -61,7 +61,7 @@ instance Monad Optional where
     -> Optional a
     -> Optional b
   (=<<) =
-    error "todo: Course.Monad (=<<)#instance Optional"
+    bindOptional
 
 -- | Binds a function on the reader ((->) t).
 --
@@ -72,8 +72,8 @@ instance Monad ((->) t) where
     (a -> ((->) t b))
     -> ((->) t a)
     -> ((->) t b)
-  (=<<) =
-    error "todo: Course.Monad (=<<)#instance ((->) t)"
+  f =<< g =
+    \x -> f (g x) x
 
 -- | Witness that all things with (=<<) and (<$>) also have (<*>).
 --
@@ -107,12 +107,14 @@ instance Monad ((->) t) where
 -- >>> ((*) <**> (+2)) 3
 -- 15
 (<**>) ::
-  Monad k =>
-  k (a -> b)
-  -> k a
-  -> k b
-(<**>) =
-  error "todo: Course.Monad#(<**>)"
+  Monad f =>
+  f (a -> b)
+  -> f a
+  -> f b
+f <**> a =
+  f >>= \f' ->
+  a >>= \a' ->
+  pure (f' a')
 
 infixl 4 <**>
 
@@ -130,11 +132,11 @@ infixl 4 <**>
 -- >>> join (+) 7
 -- 14
 join ::
-  Monad k =>
-  k (k a)
-  -> k a
+  Monad f =>
+  f (f a)
+  -> f a
 join =
-  error "todo: Course.Monad#join"
+  (=<<) id
 
 -- | Implement a flipped version of @(=<<)@, however, use only
 -- @join@ and @(<$>)@.
@@ -143,28 +145,28 @@ join =
 -- >>> ((+10) >>= (*)) 7
 -- 119
 (>>=) ::
-  Monad k =>
-  k a
-  -> (a -> k b)
-  -> k b
-(>>=) =
-  error "todo: Course.Monad#(>>=)"
+  Monad f =>
+  f a
+  -> (a -> f b)
+  -> f b
+a >>= f =
+  join (f <$> a)
 
 infixl 1 >>=
 
 -- | Implement composition within the @Monad@ environment.
--- Pronounced, Kleisli composition.
+-- Pronounced, kleisli composition.
 --
 -- >>> ((\n -> n :. n :. Nil) <=< (\n -> n+1 :. n+2 :. Nil)) 1
 -- [2,2,3,3]
 (<=<) ::
-  Monad k =>
-  (b -> k c)
-  -> (a -> k b)
+  Monad f =>
+  (b -> f c)
+  -> (a -> f b)
   -> a
-  -> k c
-(<=<) =
-  error "todo: Course.Monad#(<=<)"
+  -> f c
+f <=< g =
+  \x -> f =<< g x
 
 infixr 1 <=<
 
