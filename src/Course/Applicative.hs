@@ -80,7 +80,6 @@ instance Applicative List where
 -- prop> \x -> pure x == Full x
 --
 -- >>> Full (+8) <*> Full 7
--- Full 15
 --
 -- >>> Empty <*> Full 7
 -- Empty

@@ -40,7 +40,7 @@ exec ::
   -> s
 exec (State k) =
   snd . k
--- I want to runState with state and x, then call snd.
+
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
 --
 -- prop> \(Fun _ f) s -> eval (State f) s == fst (runState (State f) s)
@@ -48,8 +48,8 @@ eval ::
   State s a
   -> s
   -> a
-eval =
-  error "todo: Course.State#eval"
+eval (State k) =
+  fst . k
 
 -- | A `State` where the state also distributes into the produced value.
 --
@@ -58,7 +58,7 @@ eval =
 get ::
   State s s
 get =
-  error "todo: Course.State#get"
+  State (\s -> (s, s))
 
 -- | A `State` where the resulting state is seeded with the given value.
 --
@@ -68,7 +68,7 @@ put ::
   s
   -> State s ()
 put =
-  error "todo: Course.State#put"
+  State . const . (,) ()
 
 -- | Implement the `Functor` instance for `State s`.
 --
@@ -79,8 +79,8 @@ instance Functor (State s) where
     (a -> b)
     -> State s a
     -> State s b
-  (<$>) =
-    error "todo: Course.State#(<$>)"
+  f <$> State k =
+    State (\s -> let (a, t) = k s in (f a, t))
 
 -- | Implement the `Applicative` instance for `State s`.
 --
@@ -90,20 +90,23 @@ instance Functor (State s) where
 -- >>> runState (pure (+1) <*> pure 0) 0
 -- (1,0)
 --
--- >>> runState (State (\s -> ((+3), s ++ ("apple":.Nil))) <*> State (\s -> (7, s ++ ("banana":.Nil)))) Nil
+-- >>> import qualified Prelude as P
+-- >>> runState (State (\s -> ((+3), s P.++ ["apple"])) <*> State (\s -> (7, s P.++ ["banana"]))) []
 -- (10,["apple","banana"])
 instance Applicative (State s) where
   pure ::
     a
     -> State s a
-  pure =
-    error "todo: Course.State pure#instance (State s)"
+  pure a =
+    State (\s -> (a, s))
   (<*>) ::
     State s (a -> b)
     -> State s a
     -> State s b
-  (<*>) =
-    error "todo: Course.State (<*>)#instance (State s)"
+  State f <*> State a =
+    State (\s -> let (g, t) = f s
+                     (z, u) = a t
+                 in (g z, u))
 
 -- | Implement the `Monad` instance for `State s`.
 --
@@ -112,16 +115,13 @@ instance Applicative (State s) where
 --
 -- >>> let modify f = State (\s -> ((), f s)) in runState (modify (+1) >>= \() -> modify (*2)) 7
 -- ((),16)
---
--- >>> runState ((\a -> State (\s -> (a + s, 10 + s))) =<< State (\s -> (s * 2, 4 + s))) 2
--- (10,16)
 instance Monad (State s) where
   (=<<) ::
     (a -> State s b)
     -> State s a
     -> State s b
-  (=<<) =
-    error "todo: Course.State (=<<)#instance (State s)"
+  f =<< State k =
+    State (\s -> let (a, t) = k s in runState (f a) t)
 
 -- | Find the first element in a `List` that satisfies a given predicate.
 -- It is possible that no element is found, hence an `Optional` result.
@@ -142,8 +142,10 @@ findM ::
   (a -> f Bool)
   -> List a
   -> f (Optional a)
-findM =
-  error "todo: Course.State#findM"
+findM _ Nil =
+  pure Empty
+findM p (h :. t) =
+  (\q -> if q then pure (Full h) else findM p t) =<< p h
 
 -- | Find the first element in a `List` that repeats.
 -- It is possible that no element repeats, hence an `Optional` result.
@@ -157,7 +159,7 @@ firstRepeat ::
   List a
   -> Optional a
 firstRepeat =
-  error "todo: Course.State#firstRepeat"
+  listWithState findM S.member
 
 -- | Remove all duplicate elements in a `List`.
 -- /Tip:/ Use `filtering` and `State` with a @Data.Set#Set@.
@@ -170,7 +172,18 @@ distinct ::
   List a
   -> List a
 distinct =
-  error "todo: Course.State#distinct"
+  listWithState filtering S.notMember
+
+listWithState ::
+  Ord a1 =>
+  ((a1 -> State (S.Set a1) a2)
+  -> t
+  -> State (S.Set a3) a)
+  -> (a1 -> S.Set a1 -> a2)
+  -> t
+  -> a
+listWithState f m x =
+  eval (f (State . lift2 (lift2 (,)) m S.insert) x) S.empty
 
 -- | A happy number is a positive integer, where the sum of the square of its digits eventually reaches 1 after repetition.
 -- In contrast, a sad number (not a happy number) is where the sum of the square of its digits never reaches 1
@@ -197,4 +210,10 @@ isHappy ::
   Integer
   -> Bool
 isHappy =
-  error "todo: Course.State#isHappy"
+  contains 1 .
+    firstRepeat .
+    produce (toInteger .
+             sum .
+             map (join (*) .
+                  digitToInt) .
+             show')
