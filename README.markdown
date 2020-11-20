@@ -7,8 +7,8 @@ Solutions for system-f's excellent haskell course available here: https://github
 * `Course.FileIO`✓
 * `Course.State`✓
 * `Course.StateT`
-* `Course.Extend`
-* `Course.Comonad`
+* `Course.Extend`✓
+* `Course.Comonad`✓
 * `Course.Contravariant`
 * `Course.Compose`
 * `Course.Traversable`
