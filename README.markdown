@@ -3,9 +3,9 @@ Solutions for system-f's excellent haskell course available here: https://github
 * `Course.List` ✓
 * `Course.Functor`✓
 * `Course.Applicative`
-* `Course.Monad`
-* `Course.FileIO`
-* `Course.State`
+* `Course.Monad`✓
+* `Course.FileIO`✓
+* `Course.State`✓
 * `Course.StateT`
 * `Course.Extend`
 * `Course.Comonad`
