@@ -72,7 +72,7 @@ instance Monad k => Applicative (StateT s k) where
 
 
 -- Wow what the hell
--- I don't get that at all... XD
+-- I don't get that at all...
 
 
 -- | Implement the `Monad` instance for @StateT s k@ given a @Monad k@.
